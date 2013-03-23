@@ -6,7 +6,7 @@ use warnings FATAL => 'all';
 
 =head1 NAME
 
-AnyEvent::Postfix::Policy - The great new AnyEvent::Postfix::Policy!
+AnyEvent::Postfix::Policy - Event driven Postfix policy service
 
 =head1 VERSION
 
@@ -19,81 +19,14 @@ our $VERSION = '0.01';
 
 =head1 SYNOPSIS
 
-Quick summary of what the module does.
-
-Perhaps a little code snippet.
-
-    use AnyEvent::Postfix::Policy;
-
-    my $foo = AnyEvent::Postfix::Policy->new();
-    ...
-
-=head1 EXPORT
-
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
-
-=head1 SUBROUTINES/METHODS
-
-=head2 function1
+=head1 METHODS
 
 =cut
 
-sub function1 {
-}
-
-=head2 function2
-
-=cut
-
-sub function2 {
-}
 
 =head1 AUTHOR
 
 Anthony Johnson, C<< <aj at ohess.org> >>
-
-=head1 BUGS
-
-Please report any bugs or feature requests to C<bug-anyevent-postfix-policy at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=AnyEvent-Postfix-Policy>.  I will be notified, and then you'll
-automatically be notified of progress on your bug as I make changes.
-
-
-
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc AnyEvent::Postfix::Policy
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker (report bugs here)
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=AnyEvent-Postfix-Policy>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/AnyEvent-Postfix-Policy>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/AnyEvent-Postfix-Policy>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/AnyEvent-Postfix-Policy/>
-
-=back
-
-
-=head1 ACKNOWLEDGEMENTS
-
 
 =head1 LICENSE AND COPYRIGHT
 
@@ -123,7 +56,5 @@ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
-
 =cut
-
-1; # End of AnyEvent::Postfix::Policy
+1;
