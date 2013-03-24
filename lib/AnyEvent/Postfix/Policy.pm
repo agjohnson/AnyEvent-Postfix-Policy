@@ -23,6 +23,92 @@ our $VERSION = '0.01';
 
 =cut
 
+use AnyEvent;
+use AnyEvent::Socket qw/tcp_server/;
+use Data::Dumper;
+
+use AnyEvent::Postfix::Policy::Handle;
+
+$| = 1;
+
+
+sub new {
+    my $class = shift;
+
+    bless {
+        conns => []
+    }, $class;
+}
+
+sub run {
+    my ($self, $host, $port) = @_;
+    $self->{guard} = AE::cv;
+    $self->{guard}->begin;
+    my $guard = tcp_server(
+        $host,
+        $port,
+        $self->accept_client($host, $port)
+    );
+
+    # Register wait condvar
+    my $w; $w = AE::signal QUIT => sub {
+        printf "Got quit signal, shutting down\n";
+        $self->{guard}->end;
+        undef $w;
+    };
+    $self->{guard}->recv;
+}
+
+sub accept_client {
+    my ($self, $local_host, $local_port) = @_;
+    printf "Listening on %s\n", $local_port;
+
+    return sub {
+        my ($sock, $host, $port) = @_;
+
+        printf "Client connection from %s:%s\n", $host, $port;
+        $self->{guard}->begin;
+
+        push(@{$self->{conns}}, AnyEvent::Postfix::Policy::Handle->new(
+            fh => $sock,
+            poll => 'rw',
+            on_read => sub {
+                my ($sock) = @_;
+                $sock->push_read(line => $self->parse_inbound($sock));
+            },
+            on_eof => sub {
+                printf "Closed connection %s:%s\n", $host, $port;
+                $self->{guard}->end
+            },
+            on_error => sub {
+                my ($handle, $fatal, $message) = @_;
+                printf("Error: %s\nClosed connection %s:%s\n",
+                  $message, $host, $port);
+                $handle->destroy;
+                $self->{guard}->end;
+            }
+        ));
+    }
+}
+
+sub parse_inbound {
+    my ($self, $sock) = @_;
+
+    return sub {
+        my ($sock, $line, $eol) = @_;
+
+        if ($line eq '') {
+            print Dumper $sock->{params};
+            $sock->clear_params;
+            return 1;
+        }
+        elsif (my @param = ($line =~ m/([\w\-\_]+)=(.*)/)) {
+            $sock->param(@param);
+        }
+
+        return 0;
+    }
+}
 
 =head1 AUTHOR
 
