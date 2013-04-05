@@ -25,24 +25,36 @@ our $VERSION = '0.01';
 
 use AnyEvent;
 use AnyEvent::Socket qw/tcp_server/;
-use Data::Dumper;
 
 use AnyEvent::Postfix::Policy::Handle;
+use AnyEvent::Postfix::Policy::Response;
 
 $| = 1;
 
 
 sub new {
-    my $class = shift;
+    my ($class, %args) = @_;
 
     bless {
-        conns => []
+        conns => {},
+        on_receive => sub {
+            my $cv_write = shift;
+            return AnyEvent->condvar(
+                cb => sub {
+                    my $sock = shift->recv;
+                    $cv_write->send(AnyEvent::Postfix::Policy::Response->new(
+                        action => 'dunno'
+                    ));
+                }
+            );
+        },
+        %args
     }, $class;
 }
 
 sub run {
     my ($self, $host, $port) = @_;
-    $self->{guard} = AE::cv;
+    $self->{guard} = AnyEvent->condvar;
     $self->{guard}->begin;
     my $guard = tcp_server(
         $host,
@@ -51,7 +63,7 @@ sub run {
     );
 
     # Register wait condvar
-    my $w; $w = AE::signal QUIT => sub {
+    my $w; $w = AnyEvent::signal QUIT => sub {
         printf "Got quit signal, shutting down\n";
         $self->{guard}->end;
         undef $w;
@@ -69,37 +81,38 @@ sub accept_client {
         printf "Client connection from %s:%s\n", $host, $port;
         $self->{guard}->begin;
 
-        push(@{$self->{conns}}, AnyEvent::Postfix::Policy::Handle->new(
+        my $conn = AnyEvent::Postfix::Policy::Handle->new(
             fh => $sock,
             poll => 'rw',
             on_read => sub {
                 my ($sock) = @_;
-                $sock->push_read(line => $self->parse_inbound($sock));
+                $sock->push_read(line => $self->_parse_inbound);
             },
             on_eof => sub {
                 printf "Closed connection %s:%s\n", $host, $port;
                 $self->{guard}->end
             },
             on_error => sub {
+                # TODO move to method to delete handle
                 my ($handle, $fatal, $message) = @_;
                 printf("Error: %s\nClosed connection %s:%s\n",
                   $message, $host, $port);
                 $handle->destroy;
                 $self->{guard}->end;
             }
-        ));
+        );
+        $self->{conn}->{$conn} = $conn;
     }
 }
 
-sub parse_inbound {
-    my ($self, $sock) = @_;
+sub _parse_inbound {
+    my ($self) = @_;
 
     return sub {
         my ($sock, $line, $eol) = @_;
 
         if ($line eq '') {
-            print Dumper $sock->{params};
-            $sock->clear_params;
+            $self->_trigger_receive($sock);
             return 1;
         }
         elsif (my @param = ($line =~ m/([\w\-\_]+)=(.*)/)) {
@@ -108,6 +121,21 @@ sub parse_inbound {
 
         return 0;
     }
+}
+
+sub _trigger_receive {
+    my ($self, $sock) = @_;
+
+    my $cv = $self->{on_receive}->(
+        AnyEvent->condvar(
+            cb => sub {
+                my $resp = shift->recv;
+                $sock->push_write($resp->as_string);
+                $sock->clear_params;
+            }
+        )
+    );
+    return $cv->send($sock);
 }
 
 =head1 AUTHOR

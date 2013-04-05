@@ -11,6 +11,8 @@ sub new {
     bless $self, $class;
 }
 
+sub params { shift->{params} }
+
 sub param {
     my ($self, $param, $value) = @_;
     $self->{params}->{$param} = $value
