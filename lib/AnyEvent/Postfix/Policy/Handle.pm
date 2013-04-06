@@ -17,7 +17,7 @@ sub param {
     my ($self, $param, $value) = @_;
     $self->{params}->{$param} = $value
       if ($value);
-    return $self->{params}->{$param};
+    return $self->{params}->{$param} // '';
 }
 
 sub clear_params {

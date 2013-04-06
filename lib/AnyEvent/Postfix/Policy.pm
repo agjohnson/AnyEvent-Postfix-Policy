@@ -31,25 +31,48 @@ use AnyEvent::Postfix::Policy::Response;
 
 $| = 1;
 
+# ALSO: http://www.postfix.org/SMTPD_POLICY_README.html
+
+
+sub all (@) { $_ || return 0 for @_; 1 }
 
 sub new {
     my ($class, %args) = @_;
 
-    bless {
+    my $self; $self = {
         conns => {},
+        rules => [],
         on_receive => sub {
             my $cv_write = shift;
             return AnyEvent->condvar(
                 cb => sub {
                     my $sock = shift->recv;
-                    $cv_write->send(AnyEvent::Postfix::Policy::Response->new(
+
+                    for my $rule (@{$self->{rules}}) {
+                        my @matches = map {
+                            ($sock->param($_) =~ $rule->{$_}) ? 1 : 0;
+                        } grep !/^cb$/, keys %{$rule};
+
+                        return $cv_write->send($rule->{cb}->($sock))
+                          if (all @matches);
+                    }
+
+                    return $cv_write->send(AnyEvent::Postfix::Policy::Response->new(
                         action => 'dunno'
                     ));
                 }
             );
         },
         %args
-    }, $class;
+    };
+
+    bless $self, $class;
+}
+
+sub rule {
+    my $self = shift;
+    my %args = @_;
+    push(@{$self->{rules}}, \%args);
 }
 
 sub run {
