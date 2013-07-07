@@ -31,10 +31,13 @@ use AnyEvent::Postfix::Policy::Response;
 
 $| = 1;
 
-# ALSO: http://www.postfix.org/SMTPD_POLICY_README.html
+=head1 METHODS
 
+=head2 new(%args)
 
-sub all (@) { $_ || return 0 for @_; 1 }
+Create a new policy server.
+
+=cut
 
 sub new {
     my ($class, %args) = @_;
@@ -54,7 +57,7 @@ sub new {
                         } grep !/^cb$/, keys %{$rule};
 
                         return $cv_write->send($rule->{cb}->($sock))
-                          if (all @matches);
+                          if (all(@matches));
                     }
 
                     return $cv_write->send(AnyEvent::Postfix::Policy::Response->new(
@@ -93,6 +96,12 @@ sub run {
     };
     $self->{guard}->recv;
 }
+
+=head2 accept_client($host, $port)
+
+Create socket handle for listening for incoming connections.
+
+=cut
 
 sub accept_client {
     my ($self, $local_host, $local_port) = @_;
@@ -160,6 +169,19 @@ sub _trigger_receive {
     );
     return $cv->send($sock);
 }
+
+=head2 all(@items)
+
+Checks that all items in C<@items> evaluate to true, returns true/false
+
+=cut
+
+sub all (@) { $_ || return 0 for @_; 1 }
+
+
+=head1 SEE ALSO
+
+L<Postfix Policy README|http://www.postfix.org/SMTPD_POLICY_README.html>
 
 =head1 AUTHOR
 
