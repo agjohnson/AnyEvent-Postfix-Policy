@@ -5,7 +5,7 @@ use Module::Build;
 
 my $builder = Module::Build->new(
     module_name => 'AnyEvent::Postfix::Policy',
-    license => 'MIT',
+    license => 'mit',
     dist_author => q{Anthony Johnson <aj@ohess.org>},
     dist_version_from => 'lib/AnyEvent/Postfix/Policy.pm',
     release_status => 'stable',
